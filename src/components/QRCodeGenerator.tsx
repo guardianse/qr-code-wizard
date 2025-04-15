@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { QRCodePreview } from './QRCodePreview';
+import QRCodeAdvancedOptions from './QRCodeAdvancedOptions';
 import { QRCodeOptions, generateQRCode, downloadQRCode, formatContactInfo } from '@/utils/qrCodeService';
 import { QrCode, Link, Text, Phone, Download } from 'lucide-react';
 
@@ -16,12 +16,15 @@ const QRCodeGenerator = () => {
   const [qrData, setQrData] = useState('https://');
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [qrSize, setQrSize] = useState(300);
+  const [errorLevel, setErrorLevel] = useState<'L' | 'M' | 'Q' | 'H'>('M');
+  const [previewBackground, setPreviewBackground] = useState<'white' | 'dark' | 'pattern'>('white');
   const [qrOptions, setQrOptions] = useState<QRCodeOptions>({
     errorCorrectionLevel: 'M',
     width: 300,
     margin: 1,
     color: {
-      dark: '#000000', 
+      dark: '#000000',
       light: '#ffffff'
     }
   });
@@ -35,6 +38,17 @@ const QRCodeGenerator = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    const handleBackgroundChange = (event: CustomEvent) => {
+      setPreviewBackground(event.detail);
+    };
+
+    window.addEventListener('changePreviewBackground', handleBackgroundChange as EventListener);
+    return () => {
+      window.removeEventListener('changePreviewBackground', handleBackgroundChange as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
     const generateCode = async () => {
       if (!qrData) return;
       
@@ -46,7 +60,11 @@ const QRCodeGenerator = () => {
           dataToEncode = formatContactInfo(name, phone, email, company);
         }
         
-        const qrCodeDataUrl = await generateQRCode(dataToEncode, qrOptions);
+        const qrCodeDataUrl = await generateQRCode(dataToEncode, {
+          ...qrOptions,
+          width: qrSize,
+          errorCorrectionLevel: errorLevel
+        });
         setQrImageUrl(qrCodeDataUrl);
       } catch (error) {
         console.error('Error generating QR code:', error);
@@ -62,7 +80,7 @@ const QRCodeGenerator = () => {
 
     const timeoutId = setTimeout(generateCode, 500);
     return () => clearTimeout(timeoutId);
-  }, [qrData, qrOptions, activeTab, name, phone, email, company, toast]);
+  }, [qrData, qrOptions, activeTab, name, phone, email, company, toast, qrSize, errorLevel]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -197,6 +215,13 @@ const QRCodeGenerator = () => {
             </TabsContent>
           </Tabs>
 
+          <QRCodeAdvancedOptions
+            size={qrSize}
+            onSizeChange={setQrSize}
+            errorLevel={errorLevel}
+            onErrorLevelChange={setErrorLevel}
+          />
+
           <div className="mt-6 space-y-4">
             <div className="space-y-2">
               <Label>QR Code Color</Label>
@@ -238,6 +263,7 @@ const QRCodeGenerator = () => {
             imageUrl={qrImageUrl}
             isLoading={isLoading}
             isEmpty={!qrData && activeTab !== 'contact' || (activeTab === 'contact' && !name && !phone && !email)}
+            previewBackground={previewBackground}
           />
           
           <Button
