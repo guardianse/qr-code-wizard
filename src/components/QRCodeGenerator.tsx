@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { QRCodePreview } from './QRCodePreview';
 import QRCodeAdvancedOptions from './QRCodeAdvancedOptions';
 import { QRCodeOptions, generateQRCode, downloadQRCode, formatContactInfo } from '@/utils/qrCodeService';
-import { QrCode, Link, Text, Phone, Download } from 'lucide-react';
+import { QrCode, Link, Text, Phone, Download, Droplet } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const QRCodeGenerator = () => {
   const [activeTab, setActiveTab] = useState('url');
@@ -29,7 +30,6 @@ const QRCodeGenerator = () => {
     }
   });
   
-  // Contact form fields
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -84,7 +84,6 @@ const QRCodeGenerator = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Reset the QR data based on the selected tab
     if (value === 'url') {
       setQrData('https://');
     } else if (value === 'text') {
@@ -114,12 +113,12 @@ const QRCodeGenerator = () => {
     });
   };
 
-  const handleColorChange = (color: string) => {
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQrOptions({
       ...qrOptions,
       color: {
         ...qrOptions.color,
-        dark: color
+        dark: e.target.value
       }
     });
   };
@@ -224,33 +223,30 @@ const QRCodeGenerator = () => {
 
           <div className="mt-6 space-y-4">
             <div className="space-y-2">
-              <Label>QR Code Color</Label>
-              <div className="flex gap-2">
-                <button
-                  className="w-8 h-8 rounded-full bg-black border border-gray-300"
-                  onClick={() => handleColorChange('#000000')}
-                  aria-label="Black"
-                />
-                <button
-                  className="w-8 h-8 rounded-full bg-qr-primary border border-gray-300"
-                  onClick={() => handleColorChange('#9b87f5')}
-                  aria-label="Purple"
-                />
-                <button
-                  className="w-8 h-8 rounded-full bg-qr-secondary border border-gray-300"
-                  onClick={() => handleColorChange('#0EA5E9')}
-                  aria-label="Blue"
-                />
-                <button
-                  className="w-8 h-8 rounded-full bg-green-500 border border-gray-300"
-                  onClick={() => handleColorChange('#22c55e')}
-                  aria-label="Green"
-                />
-                <button
-                  className="w-8 h-8 rounded-full bg-red-500 border border-gray-300"
-                  onClick={() => handleColorChange('#ef4444')}
-                  aria-label="Red"
-                />
+              <div className="flex items-center justify-between">
+                <Label>QR Code Color</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-fit flex items-center gap-2"
+                    >
+                      <Droplet className="h-4 w-4" style={{ color: qrOptions.color.dark }} />
+                      <div 
+                        className="h-4 w-4 rounded-full border"
+                        style={{ backgroundColor: qrOptions.color.dark }}
+                      />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-fit p-3">
+                    <Input
+                      type="color"
+                      value={qrOptions.color.dark}
+                      onChange={handleColorChange}
+                      className="w-32 h-32 p-1 cursor-pointer"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
