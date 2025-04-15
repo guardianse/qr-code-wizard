@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,8 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { QRCodePreview } from './QRCodePreview';
 import QRCodeAdvancedOptions from './QRCodeAdvancedOptions';
 import { QRCodeOptions, generateQRCode, downloadQRCode, formatContactInfo } from '@/utils/qrCodeService';
-import { QrCode, Link, Text, Phone, Download, Droplet } from 'lucide-react';
+import { QrCode, Link, Text, Phone, Download, Droplet, Share2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const QRCodeGenerator = () => {
   const [activeTab, setActiveTab] = useState('url');
@@ -34,6 +36,7 @@ const QRCodeGenerator = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
+  const isMobile = useIsMobile();
 
   const { toast } = useToast();
 
@@ -113,6 +116,41 @@ const QRCodeGenerator = () => {
     });
   };
 
+  const handleShare = async () => {
+    if (!qrImageUrl || !navigator.share) return;
+
+    try {
+      // Convert data URL to Blob
+      const response = await fetch(qrImageUrl);
+      const blob = await response.blob();
+      
+      // Create file from blob
+      const fileName = activeTab === 'url' ? 'url-qrcode.png' : 
+                      activeTab === 'text' ? 'text-qrcode.png' : 
+                      `contact-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      await navigator.share({
+        title: 'QR Code',
+        text: 'Check out my QR code',
+        files: [file]
+      });
+
+      toast({
+        title: 'QR Code Shared',
+        description: 'Your QR code has been shared successfully.',
+      });
+    } catch (error) {
+      console.error('Error sharing QR code:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to share QR code',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQrOptions({
       ...qrOptions,
@@ -124,19 +162,19 @@ const QRCodeGenerator = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full gap-6 animate-fade-in">
+    <div className={`flex ${isMobile ? 'flex-col' : 'flex-col lg:flex-row'} w-full gap-6 animate-fade-in`}>
       <Card className="flex-1 border-2 border-qr-light">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="w-full grid grid-cols-3 mb-6">
               <TabsTrigger value="url" className="flex gap-2 items-center">
-                <Link size={16} /> URL
+                <Link size={isMobile ? 14 : 16} /> URL
               </TabsTrigger>
               <TabsTrigger value="text" className="flex gap-2 items-center">
-                <Text size={16} /> Text
+                <Text size={isMobile ? 14 : 16} /> Text
               </TabsTrigger>
               <TabsTrigger value="contact" className="flex gap-2 items-center">
-                <Phone size={16} /> Contact
+                <Phone size={isMobile ? 14 : 16} /> Contact
               </TabsTrigger>
             </TabsList>
             
@@ -254,7 +292,7 @@ const QRCodeGenerator = () => {
       </Card>
       
       <Card className="flex-1 border-2 border-qr-light">
-        <CardContent className="p-6 flex flex-col items-center justify-between h-full">
+        <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-between h-full">
           <QRCodePreview
             imageUrl={qrImageUrl}
             isLoading={isLoading}
@@ -262,13 +300,25 @@ const QRCodeGenerator = () => {
             previewBackground={previewBackground}
           />
           
-          <Button
-            className="w-full mt-6 bg-qr-primary hover:bg-qr-primary/90"
-            disabled={!qrImageUrl || isLoading}
-            onClick={handleDownload}
-          >
-            <Download size={16} className="mr-2" /> Download QR Code
-          </Button>
+          <div className="w-full flex flex-col sm:flex-row gap-3 mt-6">
+            <Button
+              className="flex-1 bg-qr-primary hover:bg-qr-primary/90"
+              disabled={!qrImageUrl || isLoading}
+              onClick={handleDownload}
+            >
+              <Download size={isMobile ? 14 : 16} className="mr-2" /> Download
+            </Button>
+            
+            {navigator.share && (
+              <Button
+                className="flex-1 bg-qr-secondary hover:bg-qr-secondary/90"
+                disabled={!qrImageUrl || isLoading}
+                onClick={handleShare}
+              >
+                <Share2 size={isMobile ? 14 : 16} className="mr-2" /> Share
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
